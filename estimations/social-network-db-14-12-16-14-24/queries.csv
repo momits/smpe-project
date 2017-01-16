@@ -1,0 +1,17 @@
+QueryId|Query
+0|MATCH (a:Person)-[:LIKES]->(b:Post)-[:HAS_CREATOR]->(c:Person) 
+RETURN *
+1|MATCH (a:Forum)-[:CONTAINER_OF]->(b:Post)-[:HAS_TAG]->(c:Tag) RETURN *
+2|MATCH (b:Tag)<-[:HAS_TAG]-(c:Forum)-[:HAS_MODERATOR]->(a:Person)-[:HAS_INTEREST]->(d:Tag) RETURN *
+3|MATCH (a:Comment)-[:HAS_CREATOR]->(b:Person)<-[:HAS_MODERATOR]-(c:Forum) RETURN *
+4|MATCH (a)-->(b)-->(c) RETURN *
+5|MATCH (a:Person)-[:WORK_AT]->(b:Company)<-[:WORK_AT]-(c:Person)-[:KNOWS]->(a) RETURN *
+6|MATCH (a:Person)-[:HAS_INTEREST]->(b:Tag)<-[:HAS_TAG]-(c:Forum)-[:HAS_MODERATOR]->(d:Person)-[:KNOWS]->(a) RETURN *
+7|MATCH (p:Person:Post) RETURN *
+8|MATCH (x)-->(p:Comment:Post)<--(y) RETURN *
+9|MATCH (a)-->(b)-->(c)-->(d)-->(e:Country:Continent) RETURN *
+10|MATCH (p2:Person)-->(p1)-[:LIKES]->(c)-[:REPLY_OF]->(x) RETURN *
+11|MATCH (c3)-[:IS_PART_OF]->(c2)<-[:IS_PART_OF]-(c1:Country) RETURN *
+12|MATCH (c4)-[:IS_LOCATED_IN]->(c3)-[:IS_PART_OF]->(c2)<-[:IS_PART_OF]-(c1:Country) RETURN *
+13|MATCH (p)-[:HAS_INTEREST]->(t)-[:IS_LOCATED_IN]->(p) RETURN *
+14|MATCH (c1)-[:REPLY_OF]->(c2)-[:STUDY_AT]->(u) RETURN *

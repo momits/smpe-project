@@ -1,0 +1,21 @@
+QueryId|Query
+0|MATCH (a:Director)-->(b:Movie)<--(c:Actor)-->(d:Movie)<--(e:Director) RETURN *
+1|MATCH (a:Director:Person)-[w]->(b:Movie)<-[x]-(c:Actor)-[y]->(d:Movie)<-[z]-(e:Director:Actor) RETURN *
+2|MATCH (a:Actor:Director:Person)-->(b:Movie) RETURN *
+3|MATCH (c)<-[f:FRIEND]-(a:Actor:Director:Person)-->(b:Movie) RETURN *
+4|MATCH (c)<--(a:Actor:Director:Person)-->(b:Movie) RETURN *
+5|MATCH (m)<-[:ACTS_IN]-(a:Director) RETURN *
+6|MATCH (m)<-[:ACTS_IN]-(a:Director)-->(b:Movie) RETURN *
+7|MATCH (c:Person)-->(m)<-[:ACTS_IN]-(a:Director)-->(b:Movie) RETURN *
+8|MATCH (a:Movie)<-[:ACTS_IN]-(b:Actor)-[:DIRECTED]->(c:Movie)<-[:DIRECTED]-(d:Director)RETURN *
+9|MATCH (e)--(d)--(c)--(a)--(b:Person:Movie) RETURN *
+10|MATCH (c)--(a:Actor:Director:Person)-->(b:Movie) RETURN *
+11|MATCH (a)-->(b)-->(c) RETURN *
+12|MATCH (a)-->(b)-->(c)-->(d) RETURN *
+13|MATCH (a)-->(b)-->(c)-->(d)-->(e) RETURN *
+14|MATCH (a)-->(b)-->(c)-->(d)-->(e)-->(f)-->(g)-->(h)-->(i)-->(j)-->(k) RETURN *
+15|MATCH (m2)<-[:DIRECTED]-(a)-[:ACTS_IN]->(m1) RETURN *
+16|MATCH (m2)<-[:DIRECTED]-(a)-[w]->(m1) RETURN *
+17|MATCH (a:Actor:Person)-->(m)<--(d:Director:Person) RETURN *
+18|MATCH (a:Person:Movie)--(b:Person:Movie) RETURN *
+19|MATCH (m1)<-[:DIRECTED]-(a:Person)-->(m2) RETURN *

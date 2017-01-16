@@ -1,0 +1,9 @@
+Arch: amd64
+Cores: 4
+Memory: 1908932608
+OS: Linux (4.8.12-100.fc23.x86_64)
+VirtualMachine: OpenJDK 64-Bit Server VM by Oracle Corporation (25.111-b16)
+
+Cascades Version: a24e18d0936f9fd0950eedc33752b55f75e9d1be
+Benchmark: 1.1
+Replication: 1
