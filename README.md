@@ -58,7 +58,7 @@ For this analysis we consider the following two databases:
 
 For the sets of queries tested on these databases, please refer to the [analysis document]().
 
-
+## References
 
 <a name="neo4j">1</a>: [Neo4j](https://neo4j.com/) is a DBMS which in contrast to relational DBMS does not use tables but graph data structures. It also has a special graph oriented query language, called *Cypher*.
 
