@@ -5,4 +5,4 @@ At my home university in Konstanz, we are currently working on a new query optim
 Because the code is not yet public, I will just be able to explain the experimental setting and then analyse the results we obtained when we ran our tests. Our test stores these results as csv-files, which I will include in this repository.
 
 
-<a name="neo4j">1</a>: Neo4j is a DBMS which in contrast to relational DBMS does not use tables but graph data structures. It also has a special graph oriented query language, called *Cypher*.
+<a name="neo4j">1</a>: [Neo4j](https://neo4j.com/) is a DBMS which in contrast to relational DBMS does not use tables but graph data structures. It also has a special graph oriented query language, called *Cypher*.
