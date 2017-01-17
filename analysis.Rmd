@@ -1,0 +1,257 @@
+---
+title: "Comparison of estimated result sizes of Neo4j and Cascades"
+author: "Moritz Renftle"
+date: "17 January 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Motivation
+
+At my home university in Konstanz, we are currently working on a new query optimizer for the graph database Neo4j [^1]. Our optimizer is based on the Cascades framework [^2], which comes from the relational database world. As a part of this work, I had to design good estimations of the result sizes of queries. These estimations are needed in order to be able to estimate the time needed to physically execute the query with a corresponding execution plan.
+
+The questions I would like to analyse, are the following:
+**Q1:** On which kinds of queries does the Cascades/Neo4j optimizer have better estimations?
+**Q2:** How are actual query size and estimated size correlated for both optimizers?
+**Q3:** Which optimizer produces overall better estimations in the given database?
+
+Because the code is not yet public, I will just be able to explain the experimental setting and then analyse the results we obtained when we ran our tests, without giving a recipe for reproduction. This is not a huge problem however, because the size estimations are deterministic and can be measured on any system. The estimated result sizes are available as csv-files in this repository.
+
+# Setting
+
+A query optimizer has to be able to estimate the result size of an arbitrary query:
+
+```
+ -------------
+|             |
+|  Database   |-------\
+|             |       |        ----------
+ -------------        \------>|           |
+                              | Optimizer |-------> Estimated result size
+ -------------        /------>|           |
+|             |       |        -----------
+|    Query    |-------/
+|             |
+ -------------
+```
+
+Our test takes a database and a set of queries on this database as input.
+It outputs a CSV-file containing the actual result size of the query and the
+estimated sizes of the optimizers:
+
+```
+ -------------
+|             |
+|  Database   |-------\
+|             |       |        ----------
+ -------------        \------>|           |
+                              |    Test   |--> CSV(QueryId|ResultSize|Optimizer|EstSize)
+ -------------        /------>|           |
+|   Catalog   |       |        -----------
+|     of      |-------/
+|   queries   |
+ -------------
+```
+
+The test was run on this system:
+```
+Arch: amd64
+Cores: 4
+Memory: 1908932608
+OS: Linux (4.8.12-100.fc23.x86_64)
+VirtualMachine: OpenJDK 64-Bit Server VM by Oracle Corporation (25.111-b16)
+```
+
+In contrast to a relational database results where results are sets of rows, in a graph database results are sets of subgraphs.
+In Neo4j a query language called *Cypher* is used to express which subgraphs one is interested in. Because our optimizer is not
+yet able to optimize all kinds of queries expressable in Cypher, we have to be careful generalizing the results of the test.
+
+Our test was run on the *MovieDb*, which is a database about movies, actors and other related entities and their relationships.  
+
+# Query Catalog
+
+The following queries were run:
+
+```{r}
+library(knitr)
+queries = read.csv("https://github.com/momits/smpe-project/raw/master/estimations/movie-db-13-12-16-23-08/queries.csv", sep = "|")
+kable(queries, caption="Query catalog for the MovieDb")
+```
+
+# Result size estimations
+
+```{r}
+data = read.csv("https://github.com/momits/smpe-project/raw/master/estimations/movie-db-13-12-16-23-08/sizes.csv", sep = "|")
+```
+
+## Absolute estimation errors
+
+We are interested in the estimation errors of the optimizers. Let's begin by looking at the absolute estimation errors, i.e. the absolute difference between estimated and actual size per query and optimizer.
+
+```{r absolute-estimation-errors, message=FALSE}
+library(dplyr)
+library(ggplot2)
+
+sizes = data %>% select(QueryId, Optimizer, EstSize, ResultSize) %>% 
+  mutate(Diff = abs(ResultSize - EstSize)) %>% distinct()
+
+ggplot(sizes, 
+       aes(x = factor(QueryId), y = abs(ResultSize - EstSize), fill=Optimizer)) +
+  geom_bar(stat="identity", position = "dodge") + 
+  scale_fill_brewer(palette = "Set1")
+```
+
+It seems that the difference is exceptionally large for query 14. Lets exclude this one for readability:
+
+```{r absolute-estimation-errors-short-patterns, message=FALSE}
+sizesOfShortPatterns = sizes %>% filter(QueryId != 14)
+
+ggplot(sizesOfShortPatterns,
+       aes(x = factor(QueryId), y = abs(ResultSize - EstSize), fill=Optimizer)) +
+  geom_bar(stat="identity", position = "dodge") +
+  scale_fill_brewer(palette = "Set1")
+```
+
+We observe that Cascades' estimations have the smaller absolute estimation errors on the tested set of queries.
+
+There also seems to be something strange happening for queries 11 to 14, which are the simplest possible patterns   with increasing length:
+
+```{r absolute-estimation-errors-long-patterns, message=FALSE}
+sizesOfLongPatterns = sizes %>% filter(QueryId >= 11 & QueryId <= 14)
+
+ggplot(sizesOfLongPatterns,
+       aes(x = factor(QueryId), y = abs(ResultSize - EstSize), fill=Optimizer)) + 
+  geom_bar(stat="identity", position = "dodge") + 
+  scale_fill_brewer(palette = "Set1")
+```
+
+While Cascades' estimations converge to 0 with growing pattern length, as does the actual result size, Neo4j's estimations diverge.
+Cascades seems to have much more accurate estimations for this simple kind of queries.
+
+Neo4js estimation seems to grow exponentially in the pattern length. Let's fit this (on a logarithmic scale!):
+```{r pattern-length-fit, message=FALSE}
+actualSizesOfLongPatterns = sizesOfLongPatterns %>% distinct(QueryId, ResultSize) %>%
+                            rename(EstSize=ResultSize) %>% mutate(Optimizer = "Reality")
+patternLengths = data.frame(QueryId=c(11,12,13,14),PatternLength=c(3,4,5,11))
+decomposed = full_join(rbind(sizesOfLongPatterns %>% select(QueryId, Optimizer, EstSize),
+                             actualSizesOfLongPatterns),
+                       patternLengths, by="QueryId")
+neo4jEstimations = decomposed %>% filter(Optimizer=="Neo4j")
+
+ggplot(decomposed, aes(x = PatternLength, y = log(EstSize + 1), color=Optimizer)) +
+  geom_point() + scale_fill_brewer(palette = "Set1") + 
+  geom_smooth(data=neo4jEstimations, method = lm, formula = y ~ x, se=FALSE)
+```
+
+From the plot it looks like an exponential model fits Neo4js estimations perfectly. And indeed:
+```{r pattern-length-fit-summary, message=FALSE}
+fit = lm(log(neo4jEstimations$EstSize) ~ neo4jEstimations$PatternLength)
+summary(fit)
+```
+
+We also want to know how strongly the estimations are (linearly) correlated with the actual query size for both optimizers. For Neo4j this is
+```{r correlation-neo4j, message=FALSE}
+neo4j = sizes %>% filter(Optimizer == "Neo4j")
+cor(neo4j$ResultSize, neo4j$EstSize)
+```
+
+And for Cascades:
+```{r correlation-cascades, message=FALSE}
+cascades = sizes %>% filter(Optimizer == "Cascades")
+cor(cascades$ResultSize, cascades$EstSize)
+```
+
+Cascades estimations are much stronger correlated to the actual sizes!
+Let's look at the plots:
+```{r correlation-plots, message=FALSE}
+ggplot(sizes, aes(x = ResultSize, y = EstSize, color=Optimizer)) + geom_point() + 
+  geom_smooth(method = lm, formula = y ~ x) + 
+  facet_wrap(~Optimizer) +
+  geom_line(aes(x = ResultSize, y = ResultSize, color="Actual"))
+```
+
+Neo4j's estimations are actually negatively correlated to the result sizes, which is the worst imaginable thing. Cascades estimations seem reasonably correlated, maybe a bit heteroscedastic.
+
+
+## Comparing the estimation error of Neo4j and Cascades
+
+
+The next plot shows
+`abs(ResultSize - Neo4jEstimatedSize) - abs(ResultSize - CascadesEstimatedSize)`,
+which is the absolute amount to which Neo4j's estimations are worse than Cascades'
+Query 14 is excluded because there Neo4j is so bad that the other bars become nearly invisibly small in relation.
+
+```{r estimation-errors-compared}
+absDiff = sizesOfShortPatterns %>% group_by(QueryId) %>% mutate(OptimizerDiff = Diff[1] - Diff[2]) %>% 
+  select(QueryId, OptimizerDiff) %>% distinct(QueryId, .keep_all=TRUE) 
+
+ggplot(absDiff, aes(x = factor(QueryId), y = OptimizerDiff)) + geom_bar(stat="identity", position = "dodge")
+```
+
+One can clearly see that Neo4j makes the larger absolute estimation errors. In a boxplot:
+```{r estimation-errors-boxplot}
+ggplot(absDiff, aes(x="", y = OptimizerDiff)) + geom_point() +
+  scale_color_brewer(palette = "Set1") + geom_boxplot()
+```
+
+We don't see much, it seems like the majority of the values is located above 0.
+
+Assuming that the differences of the estimation erros are normally distributed, let's check the 98% confidence intervals:
+```{r estimation-errors-difference-confidence}
+err98 = function(x) {
+  return(qt(0.98, df = length(x) - 1) * sd(x) / sqrt(length(x)))
+}
+
+conf = absDiff %>% group_by() %>% summarise(mean=mean(OptimizerDiff), err=err98(OptimizerDiff))
+conf %>% mutate(low = mean - err, high = mean + err)
+```
+
+The confidence interval is clearly above 0, meaning that if the above assumption is correct we can be very confident that the Cascades optimizer has better absolute estimations than Neo4j on the tested queries.
+
+The next plot shows
+`abs(ResultSize - Neo4jEstimatedSize) - abs(ResultSize - CascadesEstimatedSize) / ResultSize`,
+which is the amount to which Neo4j's estimations are worse than ours, relative to the actual result size.
+Queries 11 to 14 are excluded and those which have result size 0.
+
+```{r relative-estimation-errors-difference}
+relDiff = sizesOfShortPatterns %>% filter(QueryId < 11 | QueryId > 14) %>% filter(ResultSize != 0) %>%
+  group_by(QueryId) %>%
+  mutate(OptimizerDiff = (Diff[1] - Diff[2]) / ResultSize) %>%
+  select(QueryId, OptimizerDiff) %>% distinct(QueryId, .keep_all=TRUE)
+
+ggplot(relDiff, aes(x = factor(QueryId), y = OptimizerDiff)) + geom_bar(stat="identity", position = "dodge")
+```
+
+With the exception of query 8 Cascades is either very close to Neo4js estimations (with respect to the actual result size) or has better estimations.
+
+The confidence interval is overlapping 0:
+
+```{r relative-estimation-errors-difference-confidence}
+conf = relDiff %>% group_by() %>% summarise(mean=mean(OptimizerDiff), err=err98(OptimizerDiff))
+conf %>% mutate(low = mean - err, high = mean + err)
+```
+
+So we cannot conclude that Cascades has better estimations than Neo4j relative to the query size.
+
+# Conclusions
+
+**Q1:** On which kinds of queries does the Cascades/Neo4j optimizer have better estimations?
+
+Cascades clearly outperforms Neo4j in queries consisting of large simple patterns.
+No other subsets of queries were analysed.
+
+**Q2:** How are actual query result size and estimated size correlated for both optimizers?
+
+In case of Neo4j no sensible correlation could be found between the actual result size and the estimated size.
+In case of Cascades there is a correlation and the fitted linear model is reasonably close to reality.
+
+**Q3:** Which optimizer produces overall better estimations in the given database?
+
+Cascades clearly has the overall smaller absolute estimation errors. It is unclear which optimizer has the smaller estimation errors w.r.t. to the result sizes.
+
+[^1]: <https://neo4j.com/>
+
+[^2]: <https://pdfs.semanticscholar.org/360e/cdfc79850873162ee4185bed8f334da30031.pdf>
