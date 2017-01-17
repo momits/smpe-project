@@ -50,13 +50,8 @@ estimated sizes of the optimizers:
 
 ## Databases
 
-For this analysis we consider the following two databases:
-
-- The *MovieDb* <sup>[3](#moviedb)</sup>. A database on movies, actors, directors, their relations etc.
-
-- The *SocialNetworkDb* <sup>[4](#socialnetworkdb)</sup>. A database designed to imitate a social network.
-
-For the sets of queries tested on these databases, please refer to the [analysis document]().
+For this analysis we consider the *MovieDb* <sup>[3](#moviedb)</sup>. This is a database on movies, actors, directors, their relations etc.
+For the set of queries tested on this database, please refer to the [analysis document]().
 
 ## References
 
@@ -65,7 +60,5 @@ For the sets of queries tested on these databases, please refer to the [analysis
 <a name="cascades">2</a>: <https://pdfs.semanticscholar.org/360e/cdfc79850873162ee4185bed8f334da30031.pdf>
 
 <a name="moviedb">3</a>: <https://www.themoviedb.org/>
-
-<a name="socialnetworkdb">4</a>: <http://ldbcouncil.org/developer/snb>
 
 
