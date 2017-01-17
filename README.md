@@ -9,7 +9,7 @@ The questions I would like to analyse, are the following:
 
 Because the code is not yet public, I will just be able to explain the experimental setting and then analyse the results we obtained when we ran our tests, without giving a recipe for reproduction. This is not a huge problem however, because the size estimations are purely logical and can be measured on any system. The estimated result sizes will be available as csv-files in this repository.
 
-The analysis will be available in [this](https://github.com/momits/smpe-project/blob/master/analysis.html?raw=true) RMarkdown document.
+The analysis will be available in [this](https://github.com/momits/smpe-project/blob/master/analysis.html) RMarkdown document.
 
 ## Setting
 
@@ -51,7 +51,7 @@ estimated sizes of the optimizers:
 ## Databases
 
 For this analysis we consider the *MovieDb* <sup>[3](#moviedb)</sup>. This is a database on movies, actors, directors, their relations etc.
-For the set of queries tested on this database, please refer to the [analysis document](https://github.com/momits/smpe-project/blob/master/analysis.html?raw=true).
+For the set of queries tested on this database, please refer to the [analysis document](https://github.com/momits/smpe-project/blob/master/analysis.html).
 
 ## References
 
