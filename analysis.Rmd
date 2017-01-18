@@ -120,7 +120,7 @@ ggplot(sizesOfShortPatterns,
 
 We observe that Cascades' estimations have the smaller absolute estimation errors on the tested set of queries.
 
-There also seems to be something strange happening for queries 11 to 14, which are the simplest possible patterns   with increasing length:
+There also seems to be something strange happening for queries 11 to 14, which are the simplest possible patterns with increasing length:
 
 ```{r absolute-estimation-errors-long-patterns, message=FALSE}
 sizesOfLongPatterns = sizes %>% filter(QueryId >= 11 & QueryId <= 14)
@@ -173,7 +173,7 @@ Let's look at the plots:
 ggplot(sizes, aes(x = ResultSize, y = EstSize, color=Optimizer)) + geom_point() + 
   geom_smooth(method = lm, formula = y ~ x) + 
   facet_wrap(~Optimizer) +
-  geom_line(aes(x = ResultSize, y = ResultSize, color="Actual"))
+  geom_line(aes(x = ResultSize, y = ResultSize, color="Perfect optimizer"))
 ```
 
 Neo4j's estimations are actually negatively correlated to the result sizes, which is the worst imaginable thing. Cascades estimations seem reasonably correlated, maybe a bit heteroscedastic.
